@@ -72,6 +72,8 @@ The production base path is `/protify-prompt/`. `VITE_BASE_PATH` can override it
 
 Expected public URL, once Pages is enabled and deployment succeeds: `https://maaznpc.github.io/protify-prompt/`.
 
+The verified build is also available on the `gh-pages` branch. Pages activation is currently blocked by the connected integration's permissions. See the [deployment handoff](docs/deployment.md) for the successful checks and exact activation steps.
+
 ## Design references
 
 Reviewed [Swappa's product guides](https://swappa.com/guide) for model and variant organization, [Back Market](https://www.backmarket.com/en-us) for condition-focused second-hand shopping, and [ChangeDetection](https://github.com/dgtlmoon/changedetection.io) for visible history and explicit watches. The interface, illustrations, and implementation are original; no logos, listing photos, or marketplace data were copied.
