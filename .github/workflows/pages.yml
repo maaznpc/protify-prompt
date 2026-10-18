@@ -1,0 +1,102 @@
+name: Test and publish Nearmint
+
+on:
+  push:
+    branches: [main, gh-pages]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    if: github.ref != 'refs/heads/gh-pages'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+      - name: Publish the tested build on the allowed Pages branch
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin gh-pages --depth=1
+          python3 - <<'PY'
+          import os, pathlib, shutil, subprocess, tempfile
+          repo = pathlib.Path.cwd()
+          dist = repo / 'dist'
+          workflow = pathlib.Path('.github/workflows/pages.yml')
+          (dist / workflow).parent.mkdir(parents=True, exist_ok=True)
+          shutil.copy2(repo / workflow, dist / workflow)
+          parent = subprocess.check_output(['git', 'rev-parse', 'FETCH_HEAD'], text=True).strip()
+          with tempfile.TemporaryDirectory(prefix='pages-index-') as folder:
+              variables = os.environ.copy()
+              variables.update(GIT_DIR=str(repo / '.git'), GIT_WORK_TREE=str(dist), GIT_INDEX_FILE=str(pathlib.Path(folder) / 'index'))
+              subprocess.run(['git', 'read-tree', '--empty'], cwd=dist, env=variables, check=True)
+              subprocess.run(['git', 'add', '--all', '--', '.'], cwd=dist, env=variables, check=True)
+              tree = subprocess.check_output(['git', 'write-tree'], cwd=dist, env=variables, text=True).strip()
+              commit = subprocess.check_output(['git', 'commit-tree', tree, '-p', parent, '-m', 'Publish verified Nearmint build'], text=True).strip()
+              subprocess.run(['git', 'push', 'origin', commit + ':refs/heads/gh-pages'], check=True)
+          PY
+          gh workflow run pages.yml --ref gh-pages
+  deploy:
+    if: github.ref == 'refs/heads/gh-pages'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check compiled site
+        run: |
+          test -f index.html
+          test -f sw.js
+          test -d assets
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Publish static site
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Report the published address
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: echo "::notice title=Published Pages URL::$PAGES_URL"
