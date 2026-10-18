@@ -1,33 +1,34 @@
 # Deployment handoff
 
-Nearmint's application code and tested production build have been pushed to this repository:
+- `main` contains source, tests, original illustrations, documentation, and the publication workflow.
+- `gh-pages` contains the tested static build, offline assets, `.nojekyll`, and its publication workflow.
 
-- `main`: source, tests, design assets, documentation, and the Pages workflow.
-- `gh-pages`: the complete static production build, including offline assets and `.nojekyll`.
+## Verified catalog update
 
-## Current catalog validation
+- 80 unit tests and 12 production-browser tests passed locally and in GitHub Actions.
+- Strict TypeScript, the Vite production build, formatting, and the runtime dependency audit passed.
+- The parser recognizes 382 phone model/variant entries across 18 brands. The synthetic sample market covers 82 phone models in each of Lahore, Karachi, and Islamabad.
+- Browser checks cover brand filtering, combined category filters, pagination, new-brand discount alerts, price history, imports, persistence, backups, accessibility, mobile layouts, and offline reloads.
 
-The catalog expansion passes 80 unit tests, 12 production-browser tests, the production build, and formatting checks locally. It adds 382 supported phone model/variant entries and a synthetic 82-model, 18-brand demo across three cities.
+The successful [GitHub verification and branch-publication run](https://github.com/maaznpc/protify-prompt/actions/runs/39089670708) refreshed the compiled `gh-pages` branch and dispatched its publication workflow.
 
-## Initial build verification
+## Publication flow
 
-- 52 unit tests passed locally and in GitHub Actions.
-- 10 production-browser tests passed locally and in GitHub Actions.
-- The strict TypeScript and Vite production build passed in both environments.
-- Browser tests cover manual/CSV imports, comparable-price results, bookmarks, observation persistence, budget alerts, backups, keyboard focus, responsive widths from 320 to 1440 pixels, automated WCAG AA checks, and offline reloads.
-- The runtime dependency audit reported no vulnerabilities.
+The existing `github-pages` environment permits deployment from `gh-pages`. The original workflow attempted publication from `main`, which GitHub rejected. The corrected workflow retains that protection rule:
 
-GitHub's verification run: [Test and publish Nearmint](https://github.com/maaznpc/protify-prompt/actions/runs/39065884357). Its `test-and-build` job succeeded. Its `deploy` job failed in `actions/configure-pages` because no Pages site is enabled.
+1. A push to `main` installs locked dependencies, runs unit and browser tests, and builds the site.
+2. After success, it commits the compiled site and publication workflow to `gh-pages`, preserving branch history.
+3. It dispatches publication with `gh-pages` as the actual Git reference.
+4. That run uploads the compiled files and uses the standard GitHub Pages deployment action in the protected environment.
 
 ## Remaining external requirement
 
-Direct Pages creation returned **HTTP 403: Resource not accessible by integration**. Repository push access is available, but the connected integration does not have the Pages/administration access needed to activate the site. Repository metadata still reports `has_pages: false`, and the expected public address returns HTTP 404. The website is **not live yet**.
+The [publication run from the allowed branch](https://github.com/maaznpc/protify-prompt/actions/runs/39089797085) reached `actions/configure-pages`, but GitHub returned **Not Found: no enabled Pages site**. Direct activation through the connected integration is denied with **HTTP 403: Resource not accessible by integration**. The expected public address still returns HTTP 404, so it has not been verified live.
 
-The repository owner can activate it in [Settings → Pages](https://github.com/maaznpc/protify-prompt/settings/pages):
+The repository owner can finish activation in [Settings → Pages](https://github.com/maaznpc/protify-prompt/settings/pages): select **GitHub Actions** as the source, retain `gh-pages` in the environment's allowed deployment branches, then run **Test and publish Nearmint** with **gh-pages** selected in the branch dropdown. Future pushes to `main` test, refresh the build, and dispatch publication automatically.
 
-1. Recommended for automatic future deployments: select **GitHub Actions** as the source, save, then rerun the existing workflow or run **Test and publish Nearmint** from the Actions tab. Future pushes to `main` test and deploy automatically.
-2. To publish the already-built snapshot directly: select **Deploy from a branch**, choose **gh-pages**, select **/ (root)**, and save. This branch contains the verified build; it is a snapshot and is not refreshed by the Actions-based workflow.
+For a one-off publication of the current build, **Deploy from a branch → gh-pages → / (root)** is also available. The automated workflow above uses GitHub Actions for subsequent publications.
 
-The repository is private, so GitHub's own Pages plan requirements still apply. No repository visibility or account security settings were changed.
+This private repository remains subject to GitHub's Pages plan requirements. No repository visibility, account security settings, or deployment protection rules were changed.
 
-Once activation and deployment succeed, the expected address is `https://maaznpc.github.io/protify-prompt/`. Do not treat that address as a verified live link until it responds successfully.
+Expected address after successful activation and publication: `https://maaznpc.github.io/protify-prompt/`.

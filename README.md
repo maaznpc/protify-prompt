@@ -72,7 +72,7 @@ See [docs/methodology.md](docs/methodology.md), or **How Nearmint works** in the
 
 The production base path is `/protify-prompt/`. `VITE_BASE_PATH` can override it when hosting elsewhere. Hash navigation supports direct links without server rewrites, and all fonts and visual assets are self-hosted.
 
-[The deployment workflow](.github/workflows/pages.yml) tests the application and deploys `dist` to Pages after a successful push to `main`. GitHub Pages must be enabled for the repository with **GitHub Actions** as its source. This repository is private, so Pages availability also depends on the repository owner's GitHub plan. Enabling Pages requires a repository token or integration with the relevant Pages/administration permission; ordinary source push access does not supply it.
+[The deployment workflow](.github/workflows/pages.yml) tests the application after a push to `main`, refreshes the compiled `gh-pages` branch, and dispatches publication from that branch. This respects the existing `github-pages` environment rule that permits `gh-pages` rather than `main`. GitHub Pages must be enabled for the repository with **GitHub Actions** as its source, and the environment must permit `gh-pages`. This repository is private, so Pages availability also depends on the repository owner's GitHub plan. Enabling Pages requires a repository token or integration with the relevant Pages/administration permission; ordinary source push access does not supply it.
 
 Expected public URL, once Pages is enabled and deployment succeeds: `https://maaznpc.github.io/protify-prompt/`.
 
