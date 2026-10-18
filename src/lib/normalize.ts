@@ -1,3 +1,4 @@
+import { findCatalogModel, requiresNetworkVariant } from './catalog'
 import {
   cities,
   conditions,
@@ -21,38 +22,9 @@ export function hash(value: string) {
 }
 
 export function identifyModel(raw: string): { model: string; category: Category } {
-  const text = raw
-    .toLowerCase()
-    .replace(/\bip\s*(\d{2})/g, 'iphone $1')
-    .replace(/i\s*phone/g, 'iphone')
-    .replace(/(\d)(pro|max|mini|plus)\b/g, '$1 $2')
-  const phone = text.match(/\biphone\s*(1[1-6])\s*(pro\s*max|pro|mini|plus)?\b/)
-  if (phone)
-    return {
-      model: `iPhone ${phone[1]}${
-        phone[2]
-          ? ' ' +
-            phone[2]
-              .replace(/pro\s*max/, 'pro max')
-              .split(/\s+/)
-              .map(capitalize)
-              .join(' ')
-          : ''
-      }`,
-      category: 'phones',
-    }
-  const samsung = text.match(/\b(?:samsung\s*)?(?:galaxy\s*)?s\s*(2[0-5])\s*(ultra|fe|plus|\+)?\b/)
-  if (samsung)
-    return {
-      model: `Samsung S${samsung[1]}${samsung[2] ? ' ' + (samsung[2] === '+' ? 'Plus' : samsung[2].toUpperCase() === 'FE' ? 'FE' : capitalize(samsung[2])) : ''}`,
-      category: 'phones',
-    }
-  const pixel = text.match(/\bpixel\s*([6-9])\s*(pro\s*xl|pro|a)?\b/)
-  if (pixel)
-    return {
-      model: `Pixel ${pixel[1]}${pixel[2] ? (pixel[2] === 'a' ? 'a' : ' ' + pixel[2].split(/\s+/).map(capitalize).join(' ')) : ''}`,
-      category: 'phones',
-    }
+  const catalogModel = findCatalogModel(raw)
+  if (catalogModel) return { model: catalogModel.model, category: catalogModel.category }
+  const text = raw.toLowerCase()
   const mac = text.match(/\bmac\s*book\s*(air|pro)\b.*?\b(m[1-4])\b/)
   if (mac)
     return { model: `MacBook ${capitalize(mac[1])} ${mac[2].toUpperCase()}`, category: 'laptops' }
@@ -169,6 +141,7 @@ export function normalize(raw: RawListing, now = new Date()): Listing {
   )
     warnings.push('Wanted, accessory, or partial-payment listing')
   if (identified.category === 'other') warnings.push('Model needs review')
+  if (requiresNetworkVariant(identified.model)) warnings.push('4G/5G variant not specified')
   if ((identified.category === 'phones' || identified.category === 'laptops') && !storage)
     warnings.push('Storage not specified')
   if (condition === 'unknown') warnings.push('Condition not specified')

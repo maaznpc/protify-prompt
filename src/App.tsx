@@ -33,7 +33,9 @@ import {
   X,
 } from 'lucide-react'
 import { loadWorkspace, saveWorkspace, validateBackup } from './lib/storage'
-import { createWorkspace, modelCatalog, sampleListings } from './lib/sample'
+import { createWorkspace, sampleListings } from './lib/sample'
+import { brandForModel, modelCatalog } from './lib/catalog'
+import { ModelOptions } from './components/ModelOptions'
 import {
   alertMatches,
   eligible,
@@ -91,6 +93,7 @@ export default function App() {
   const [city, setCity] = useState('Lahore'),
     [query, setQuery] = useState(''),
     [category, setCategory] = useState('all'),
+    [brand, setBrand] = useState('all'),
     [sort, setSort] = useState('best'),
     [filter, setFilter] = useState('all')
   const [ptaFilter, setPtaFilter] = useState('all'),
@@ -221,6 +224,22 @@ export default function App() {
       ...listings.map((l) => l.model).filter((m) => m !== 'Unrecognized model'),
     ]),
   ]
+  const availableBrands = [
+    ...new Set(
+      listings
+        .filter((l) => l.category !== 'other' && (category === 'all' || l.category === category))
+        .map((l) => brandForModel(l.model)),
+    ),
+  ].sort()
+  const samplePhoneModels = new Set(
+    samples.filter((l) => l.category === 'phones').map((l) => l.model),
+  ).size
+  const samplePhoneBrands = new Set(
+    samples.filter((l) => l.category === 'phones').map((l) => brandForModel(l.model)),
+  ).size
+  const snapshotModels = models.filter(
+    (m, i, all) => all.findIndex((other) => brandForModel(other) === brandForModel(m)) === i,
+  )
   const trend = useMemo(
     () => priceTrend(listings, model, city, days),
     [listings, model, city, days],
@@ -239,8 +258,11 @@ export default function App() {
       const text = `${l.model} ${l.title} ${l.source} ${l.city}`.toLowerCase(),
         comparison = analyses.get(l.id)!
       return (
-        (!query || text.includes(query.toLowerCase())) &&
+        (!query ||
+          text.includes(query.toLowerCase()) ||
+          text.replace(/[^a-z0-9]/g, '').includes(query.toLowerCase().replace(/[^a-z0-9]/g, ''))) &&
         (category === 'all' || l.category === category) &&
+        (brand === 'all' || brandForModel(l.model) === brand) &&
         (ptaFilter === 'all' || l.pta === ptaFilter) &&
         (conditionFilter === 'all' || l.condition === conditionFilter) &&
         (!maxPrice || (latest(l)?.price ?? Infinity) <= Number(maxPrice)) &&
@@ -263,7 +285,7 @@ export default function App() {
   const [visibleLimit, setVisibleLimit] = useState(18)
   useEffect(
     () => setVisibleLimit(18),
-    [query, category, city, filter, ptaFilter, conditionFilter, maxPrice, page, sort],
+    [query, category, brand, city, filter, ptaFilter, conditionFilter, maxPrice, page, sort],
   )
 
   function navigate(next: Page) {
@@ -296,6 +318,7 @@ export default function App() {
     setFilter('all')
     setQuery('')
     setCategory('all')
+    setBrand('all')
     setPtaFilter('all')
     setConditionFilter('all')
     setMaxPrice('')
@@ -318,9 +341,14 @@ export default function App() {
       />
     ))
   }
+  useEffect(() => {
+    setBrand('all')
+  }, [workspace?.mode])
+
   function clearFilters() {
     setQuery('')
     setCategory('all')
+    setBrand('all')
     setFilter('all')
     setPtaFilter('all')
     setConditionFilter('all')
@@ -589,6 +617,15 @@ export default function App() {
           )}
           {page === 'overview' && (
             <>
+              {sample && (
+                <p className="catalog-summary">
+                  <Smartphone size={15} />
+                  <span>
+                    <strong>{samplePhoneModels} phone models</strong> across {samplePhoneBrands}{' '}
+                    brands in the sample market. Every price is illustrative.
+                  </span>
+                </p>
+              )}
               <div className="stats-grid">
                 <Stat
                   icon={<Tag size={18} />}
@@ -635,9 +672,7 @@ export default function App() {
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
                       >
-                        {[...new Set([model, ...models])].map((m) => (
-                          <option key={m}>{m}</option>
-                        ))}
+                        <ModelOptions models={[...new Set([model, ...models])]} />
                       </select>
                       <ChevronDown size={13} />
                     </label>
@@ -769,7 +804,12 @@ export default function App() {
                   <div className="listings-grid overview-cards">
                     {cards(
                       deals
-                        .filter((l, i, all) => all.findIndex((p) => p.model === l.model) === i)
+                        .filter(
+                          (l, i, all) =>
+                            all.findIndex(
+                              (p) => brandForModel(p.model) === brandForModel(l.model),
+                            ) === i,
+                        )
                         .slice(0, 3),
                     )}
                   </div>
@@ -805,7 +845,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {models.slice(0, 5).map((m) => {
+                      {snapshotModels.slice(0, 5).map((m) => {
                         const t = priceTrend(listings, m, city, 30),
                           valid = t.points.filter((p) => p.median !== null),
                           first = valid[0]?.median,
@@ -860,6 +900,7 @@ export default function App() {
                                   navigate('listings')
                                   setQuery(m)
                                   setCategory('all')
+                                  setBrand('all')
                                   setFilter('all')
                                   setPtaFilter('all')
                                   setConditionFilter('all')
@@ -903,6 +944,24 @@ export default function App() {
                     </button>
                   )}
                 </div>
+                <label className="brand-picker">
+                  <span className="sr-only">Brand</span>
+                  <select
+                    aria-label="Brand"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                  >
+                    <option value="all">All brands</option>
+                    {[...new Set([...availableBrands, ...(brand === 'all' ? [] : [brand])])]
+                      .sort()
+                      .map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown size={13} />
+                </label>
                 <button
                   className={`button secondary ${showFilters ? 'filter-active' : ''}`}
                   aria-expanded={showFilters}
@@ -990,7 +1049,18 @@ export default function App() {
                       key={value}
                       aria-pressed={category === value}
                       className={category === value ? 'selected' : ''}
-                      onClick={() => setCategory(value)}
+                      onClick={() => {
+                        setCategory(value)
+                        if (
+                          brand !== 'all' &&
+                          !listings.some(
+                            (listing) =>
+                              brandForModel(listing.model) === brand &&
+                              (value === 'all' || listing.category === value),
+                          )
+                        )
+                          setBrand('all')
+                      }}
                     >
                       {label}
                     </button>

@@ -7,15 +7,19 @@
 ## What works
 
 - Responsive dashboard with model-specific 30/60/90-day price charts and 7-day averages.
-- Deterministic parsing of messy iPhone, Samsung, Pixel, MacBook, Dell, and LG listing text, including storage, condition, city, and PTA status.
+- A shared catalog of 382 phone model/variant entries across 18 brands, plus laptops and monitors, with deterministic parsing of storage, condition, city, and PTA status.
 - Independent comparable medians, IQR outlier filtering, explicit evidence counts, and conservative deal labels.
 - Private manual and CSV imports, canonical-URL deduplication, and append-only price observations.
-- Search, sorting, category/PTA/condition/budget filters, saved listings, and local budget/discount alerts.
+- Search, sorting, brand/category/PTA/condition/budget filters, saved listings, and local budget/discount alerts. Chart and alert model selectors are grouped by brand.
 - Inspectable listing details, original descriptions, observation history, and a resale calculator including repairs, transport, and selling fees.
 - IndexedDB persistence, full JSON backups and restoration, spreadsheet-safe CSV export, and an offline-capable installable PWA.
 - Clearly separated, entirely synthetic sample data. Personal imports never use the sample market as pricing evidence.
 
 This is a working **browser application**, built for GitHub Pages. It does not scrape marketplaces, confirm sales, run background collection jobs, or send server-side push alerts. Alerts are evaluated when the app opens and when the workspace changes. Data stays in the current browser; export a backup to move it to another device.
+
+The sample market covers **82 phone models across 18 brands** in Lahore, Karachi, and Islamabad, from budget Infinix/Tecno phones to premium iPhones and Samsung devices. All sample prices and observations are synthetic. More supported models become available through your own imports; catalog support does not assert local availability. Existing sample bookmarks and private workspaces survive this catalog update.
+
+Supported phone brands: Apple, Samsung, Google, OnePlus, Xiaomi, Redmi, POCO, OPPO, Vivo, Realme, Infinix, Tecno, Nothing, Motorola, Sony, Huawei, Honor, and Nokia. Hardware-different 4G/5G versions are kept separate; ambiguous network variants remain visible for review and are excluded from comparable pricing.
 
 ## Develop
 

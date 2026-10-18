@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Bell, Plus } from 'lucide-react'
 import { Modal } from './Modal'
 import { cities, type AlertRule, type Listing } from '../lib/types'
-import { modelCatalog } from '../lib/sample'
+import { brandForModel, catalogGroups, categoryForModel, modelCatalog } from '../lib/catalog'
+import { ModelOptions } from './ModelOptions'
 
 export function AlertDialog({
   listings,
@@ -19,7 +20,8 @@ export function AlertDialog({
       ...listings.map((l) => l.model).filter((m) => m !== 'Unrecognized model'),
     ]),
   ]
-  const [model, setModel] = useState(models[0]),
+  const [model, setModel] = useState('iPhone 13'),
+    [brand, setBrand] = useState('all'),
     [city, setCity] = useState('Lahore'),
     [budget, setBudget] = useState('100000'),
     [storage, setStorage] = useState('128'),
@@ -27,6 +29,13 @@ export function AlertDialog({
     [pta, setPta] = useState<AlertRule['pta']>('approved'),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('')
+  function chooseModel(next: string) {
+    setModel(next)
+    const category = categoryForModel(next)
+    setPta(category === 'phones' ? 'approved' : 'n/a')
+    setStorage(category === 'monitors' ? '0' : category === 'laptops' ? '256' : '128')
+  }
+  const visibleModels = brand === 'all' ? models : models.filter((m) => brandForModel(m) === brand)
   async function submit(event: FormEvent) {
     event.preventDefault()
     setBusy(true)
@@ -56,18 +65,28 @@ export function AlertDialog({
     >
       <form onSubmit={submit} className="import-form">
         <label className="field">
-          Model
+          Brand
           <select
-            value={model}
+            value={brand}
             onChange={(e) => {
-              setModel(e.target.value)
-              if (/macbook|dell|lg/i.test(e.target.value)) setPta('n/a')
-              else setPta('approved')
+              const next = e.target.value
+              setBrand(next)
+              if (next !== 'all' && brandForModel(model) !== next)
+                chooseModel(models.find((m) => brandForModel(m) === next)!)
             }}
           >
-            {models.map((m) => (
-              <option key={m}>{m}</option>
+            <option value="all">All brands</option>
+            {catalogGroups.map((group) => (
+              <option key={group.brand} value={group.brand}>
+                {group.brand}
+              </option>
             ))}
+          </select>
+        </label>
+        <label className="field">
+          Model
+          <select value={model} onChange={(e) => chooseModel(e.target.value)}>
+            <ModelOptions models={visibleModels} />
           </select>
         </label>
         <div className="form-grid">
@@ -115,14 +134,19 @@ export function AlertDialog({
           </label>
           <label className="field">
             Minimum discount below median
-            <select value={minDiscount} onChange={(e) => setMinDiscount(e.target.value)}>
+            <select
+              aria-label="Minimum discount below median"
+              aria-describedby="discount-help"
+              value={minDiscount}
+              onChange={(e) => setMinDiscount(e.target.value)}
+            >
               <option value="0">Any price within budget</option>
               <option value="12">At least 12% below median</option>
               <option value="15">At least 15% below median</option>
               <option value="20">At least 20% below median</option>
               <option value="25">At least 25% below median</option>
             </select>
-            <span className="field-note">
+            <span className="field-note" id="discount-help">
               Discount alerts need 5 equivalent peers and exclude unusually low prices.
             </span>
           </label>

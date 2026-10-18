@@ -49,7 +49,7 @@ export function eligible(listing: Listing) {
     listing.city !== 'Other' &&
     (listing.category === 'monitors' || listing.storage > 0) &&
     (listing.category !== 'phones' || listing.pta !== 'unknown') &&
-    !listing.warnings.some((w) => /conflict|wanted|partial-payment/i.test(w))
+    !listing.warnings.some((w) => /conflict|wanted|partial-payment|variant not specified/i.test(w))
   )
 }
 export function comparisonKey(listing: Listing) {

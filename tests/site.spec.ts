@@ -18,6 +18,13 @@ async function uploadCsv(page: Page, text: string) {
     .getByLabel('CSV file', { exact: true })
     .setInputFiles({ name: 'market.csv', mimeType: 'text/csv', buffer: Buffer.from(text) })
 }
+async function bookmarkFirst(page: Page) {
+  const card = page.locator('.listing-card').first()
+  const model = (await card.locator('.listing-title').innerText()).trim()
+  await card.getByRole('button', { name: `Save ${model} listing`, exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('Saved to your watchlist')
+  return model
+}
 async function noAxeViolations(page: Page) {
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -47,11 +54,16 @@ test('sample dashboard, chart controls, comparable detail, and calculator work',
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByText('Your price context', { exact: true })).toBeVisible()
   await expect(dialog.getByText(/Illustrative listing/)).toBeVisible()
+  const purchasePrice = Number(
+    (await dialog.locator('.detail-price').innerText()).replace(/[^0-9]/g, ''),
+  )
   await dialog.getByLabel('Expected resale (Rs)', { exact: true }).fill('150000')
   await dialog.getByLabel('Repairs (Rs)', { exact: true }).fill('5000')
   await dialog.getByLabel('Transport (Rs)', { exact: true }).fill('1000')
   await dialog.getByLabel('Selling fees (%)', { exact: true }).fill('2')
-  await expect(dialog.locator('.profit-result')).toContainText('Rs 49,000')
+  await expect(dialog.locator('.profit-result')).toContainText(
+    `Rs ${(150000 - purchasePrice - 5000 - 1000 - 3000).toLocaleString('en-PK')}`,
+  )
   await page.keyboard.press('Escape')
   await expect(dialog).not.toBeVisible()
   expect(errors).toEqual([])
@@ -59,12 +71,11 @@ test('sample dashboard, chart controls, comparable detail, and calculator work',
 
 test('bookmarks persist across reloads and can be removed', async ({ page }) => {
   await open(page)
-  await page.getByRole('button', { name: 'Save iPhone 13 listing', exact: true }).first().click()
-  await expect(page.getByRole('status')).toContainText('Saved to your watchlist')
+  const savedModel = await bookmarkFirst(page)
   await page.reload()
   await navigate(page, 'Watchlist')
   await expect(page.locator('.listing-card')).toHaveCount(1)
-  await page.getByRole('button', { name: 'Unsave iPhone 13 listing', exact: true }).click()
+  await page.getByRole('button', { name: `Unsave ${savedModel} listing`, exact: true }).click()
   await expect(page.getByText('A little space for your next find.', { exact: true })).toBeVisible()
 })
 
@@ -250,8 +261,7 @@ test('mobile layout has no horizontal overflow and navigation remains usable', a
 
 test('installed app shell and saved data are usable offline', async ({ page, context }) => {
   await open(page)
-  await page.getByRole('button', { name: 'Save iPhone 13 listing', exact: true }).first().click()
-  await expect(page.getByRole('status')).toContainText('Saved to your watchlist')
+  await bookmarkFirst(page)
   await page.evaluate(async () => {
     const registration = await navigator.serviceWorker.ready
     if (!navigator.serviceWorker.controller)
@@ -268,4 +278,56 @@ test('installed app shell and saved data are usable offline', async ({ page, con
   await navigate(page, 'Watchlist')
   await expect(page.locator('.listing-card')).toHaveCount(1)
   await context.setOffline(false)
+})
+
+test('expanded market supports brand browsing, pagination, and price history in multiple cities', async ({
+  page,
+}) => {
+  await open(page)
+  await expect(page.locator('.catalog-summary')).toContainText('18 brands')
+  await page
+    .getByRole('combobox', { name: 'Chart model', exact: true })
+    .selectOption('Redmi Note 13 4G')
+  await expect(page.getByRole('combobox', { name: 'Chart model', exact: true })).toHaveValue(
+    'Redmi Note 13 4G',
+  )
+  await expect(page.locator('.chart-cohort')).toContainText('128 GB')
+  await navigate(page, 'All listings')
+  await page.getByRole('combobox', { name: 'Brand', exact: true }).selectOption('Infinix')
+  await page.getByRole('button', { name: 'Phones', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Brand', exact: true })).toHaveValue('Infinix')
+  await expect(page.locator('.listing-card')).toHaveCount(18)
+  for (const title of await page.locator('.listing-title').allTextContents())
+    expect(title).toMatch(/^Infinix /)
+  await page.getByRole('button', { name: 'Show more listings', exact: true }).click()
+  await expect(page.locator('.listing-card')).toHaveCount(36)
+  await page.getByRole('combobox', { name: 'Market city', exact: true }).selectOption('Karachi')
+  await expect(page.locator('.listing-location').first()).toContainText('Karachi')
+  await expect(page.locator('.listing-card')).toHaveCount(18)
+  await page.getByRole('combobox', { name: 'Brand', exact: true }).selectOption('Redmi')
+  await page
+    .getByRole('textbox', { name: 'Search by model, title or source', exact: true })
+    .fill('note13')
+  await expect(page.locator('.listing-card').first()).toBeVisible()
+  for (const title of await page.locator('.listing-title').allTextContents())
+    expect(title).toMatch(/^Redmi Note 13/)
+})
+
+test('alerts can select new budget-phone brands from the full catalog', async ({ page }) => {
+  await open(page)
+  await navigate(page, 'Price alerts')
+  await page.getByRole('button', { name: 'Create alert', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('combobox', { name: 'Brand', exact: true }).selectOption('Tecno')
+  await dialog.getByRole('combobox', { name: 'Model', exact: true }).selectOption('Tecno Camon 30')
+  await dialog.getByRole('combobox', { name: 'Storage', exact: true }).selectOption('256')
+  await dialog
+    .getByRole('combobox', { name: 'Minimum discount below median', exact: true })
+    .selectOption('12')
+  await dialog.getByRole('button', { name: 'Create alert', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await expect(page.locator('.alert-rule')).toContainText('Tecno Camon 30')
+  await expect(page.locator('.alert-matches')).toContainText('Tecno Camon 30')
+  await page.reload()
+  await expect(page.locator('.alert-matches')).toContainText('Tecno Camon 30')
 })

@@ -1,5 +1,61 @@
 @charset "UTF-8";
 
+.brand-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 41px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #dfe2d5;
+  border-radius: 6px;
+  color: #5a684f;
+}
+.brand-picker select {
+  border: 0;
+  appearance: none;
+  background: transparent;
+  color: #526048;
+  font-size: 12px;
+  max-width: 125px;
+  cursor: pointer;
+}
+.listings-toolbar {
+  flex-wrap: wrap;
+}
+.listings-toolbar .search-box {
+  flex: 1 1 220px;
+}
+@media (max-width: 600px) {
+  .listings-toolbar .search-box {
+    flex-basis: 100%;
+  }
+  .brand-picker {
+    flex: 1;
+    min-width: 130px;
+  }
+  .brand-picker select {
+    width: 100%;
+    max-width: none;
+    font-size: 14px;
+  }
+  .catalog-summary {
+    font-size: 12px;
+  }
+}
+.catalog-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #627052;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: -3px 0 20px;
+}
+.catalog-summary svg {
+  margin-top: 3px;
+}
+
 :root {
   font-family: 'DM Sans', sans-serif;
   color: #292e28;

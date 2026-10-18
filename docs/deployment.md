@@ -5,7 +5,11 @@ Nearmint's application code and tested production build have been pushed to this
 - `main`: source, tests, design assets, documentation, and the Pages workflow.
 - `gh-pages`: the complete static production build, including offline assets and `.nojekyll`.
 
-## Verified
+## Current catalog validation
+
+The catalog expansion passes 80 unit tests, 12 production-browser tests, the production build, and formatting checks locally. It adds 382 supported phone model/variant entries and a synthetic 82-model, 18-brand demo across three cities.
+
+## Initial build verification
 
 - 52 unit tests passed locally and in GitHub Actions.
 - 10 production-browser tests passed locally and in GitHub Actions.

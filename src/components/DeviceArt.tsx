@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { Listing } from '../lib/types'
+import { brandForModel } from '../lib/catalog'
 
 export function DeviceArt({
   listing,
@@ -9,7 +10,8 @@ export function DeviceArt({
   large?: boolean
 }) {
   const id = useId().replaceAll(':', '')
-  const isPro = /pro/i.test(listing.model),
+  const isApple = brandForModel(listing.model) === 'Apple'
+  const isPro = isApple && /pro/i.test(listing.model),
     isPixel = /pixel/i.test(listing.model),
     isSamsung = /samsung/i.test(listing.model)
   const color = isPro ? '#54544e' : isPixel ? '#8b998a' : isSamsung ? '#b2a99e' : '#b7b9a7'
@@ -108,7 +110,7 @@ export function DeviceArt({
                   />
                 </>
               )}
-              {!isPixel && !isSamsung && (
+              {isApple && (
                 <path
                   d="M52 93c-4-3-8-1-10-1-3 0-6-3-10 0-7 5-3 18 1 23 2 3 5 2 8 1 3-1 6 2 9 0 2-2 4-6 5-9-6-2-7-10-3-14ZM45 87c0-5 3-8 7-9 0 5-3 9-7 9Z"
                   fill="#8b927f"
@@ -150,10 +152,10 @@ export function DeviceArt({
                 opacity=".55"
               />
               <rect
-                x={isPro ? 32 : 27}
+                x={isApple ? (isPro ? 32 : 27) : 43}
                 y="7"
-                width={isPro ? 30 : 40}
-                height="9"
+                width={isApple ? (isPro ? 30 : 40) : 8}
+                height={isApple ? 9 : 8}
                 rx="5"
                 fill="#222a24"
               />

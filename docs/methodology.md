@@ -4,7 +4,9 @@ Nearmint analyzes **observed asking prices**, in PKR. It does not infer transact
 
 ## Normalization
 
-Ordered, deterministic regex and token rules recognize supported model families. Aliases such as `ip12`, `i phone 13`, and `iphone12promax` are normalized before extracting suffixes. Storage picks the largest recognized GB/TB capacity so laptop RAM is not mistaken for SSD capacity. Missing fields remain unknown.
+Ordered, deterministic regex and token rules recognize an explicit shared catalog across 18 phone brands. Aliases such as `ip12`, `i phone 13`, `iphone12promax`, `1+8t`, and `redmi note13 pro+` are normalized before matching exact catalog entries, longest first. Unsupported suffixes do not silently fall back to a cheaper base model. Storage picks the largest recognized GB/TB capacity so laptop RAM is not mistaken for SSD capacity. Missing fields remain unknown.
+
+Where a model family has materially different 4G and 5G versions, those versions use separate model names and cohorts. Titles that do not specify the network variant are flagged for review and excluded from benchmarks. A recognized catalog entry is not evidence of an available local listing. The synthetic demo includes 82 phone models across all three sample cities; private listings remain independent of it.
 
 Non-PTA, JV, SIM-locked, and bypass terms take precedence over a positive substring match. Contradictory PTA claims are excluded even if a manual override tries to mark the phone approved. Device-damage terms cannot be overridden into a working-device condition. Common negations of cosmetic flaws are handled before condition matching. This is a bounded rule set, not general natural-language understanding.
 
